@@ -1,5 +1,8 @@
 package fpinscala.state
 
+import fpinscala.state.CandyDispenser
+import fpinscala.state.Input
+import fpinscala.state.Machine
 import fpinscala.state.RNG
 import fpinscala.state.RNG.*
 import org.scalatest.matchers._
@@ -64,6 +67,24 @@ class StateSpec extends AnyPropSpecLike with should.Matchers:
 
   property("functional die roll") {
     checkNTimes(rng, 100)(rollDie, (i, _) => i > 0 && i <= 6)
+  }
+
+  property("candy dispenser") {
+    import Input.{Coin, Turn}
+    import CandyDispenser._
+
+    simulateMachine(List(Coin, Turn, Coin, Turn))
+      .run(Machine(true, 2, 0))
+      ._2 shouldEqual Machine(true, 0, 2)
+
+    simulateMachine(List(Coin, Coin))
+      .run(Machine(true, 2, 0))
+      ._2 shouldEqual Machine(false, 2, 1)
+
+    simulateMachine(List(Turn, Coin, Turn))
+      .run(Machine(true, 2, 0))
+      ._2 shouldEqual Machine(true, 1, 1)
+
   }
 
 object StateSpec:

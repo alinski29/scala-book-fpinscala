@@ -187,18 +187,72 @@ object State:
 
     def map2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
       // underlying.flatMap(a => sb.map(b => f(a, b)))
-      for 
-        a <- underlying 
+      for
+        a <- underlying
         b <- sb
       yield f(a, b)
-      
+
     def flatMap[B](f: A => State[S, B]): State[S, B] =
       s =>
         val (a, s1) = underlying(s)
         f(a)(s1)
 
+  // allows State to be constructed from a function
+  def apply[S, A](f: S => (A, S)): State[S, A] = f
+
   def unit[S, A](a: A): State[S, A] =
     s => (a, s)
 
-  // allows State to be constructed from a function
-  def apply[S, A](f: S => (A, S)): State[S, A] = f
+  def sequence[S, A](actions: List[State[S, A]]): State[S, List[A]] =
+    actions.foldRight(unit[S, List[A]](Nil))((f, acc) => f.map2(acc)(_ :: _))
+
+  def get[S]: State[S, S] = s => (s, s)
+
+  def set[S](s: S): State[S, Unit] = _ => ((), s)
+
+  def modify[S](f: S => S): State[S, Unit] =
+    for
+      s <- get       // Gets the current state and assigns it to `s`.
+      _ <- set(f(s)) // Sets the new state to `f` applied to `s`.
+    yield ()
+
+  def traverse[S, A, B](as: List[A])(f: A => State[S, B]): State[S, List[B]] =
+    as.foldRight(unit[S, List[B]](Nil))((a, acc) => f(a).map2(acc)(_ :: _))
+
+  // get, set, unit, map, map2  and flatMap are all the tooling needed
+  // to implement any kind of state machine or stateful program in a functional way.
+
+/* Exercise 6.11 (HARD)
+  Implement a finite state automaton that models a simple candy dispenser.
+  The machine has two types of input: you can insert a coin, or you can turn
+  the knob to dispense candy. It can be in one of two states: locked or unlocked.
+  It also tracks how many candies are left and how many coins it contains.
+
+  The rules of the machine are as follows:
+  - Inserting a coin into a locked machine will cause it to unlock if there’s any candy left.
+  - Turning the knob on an unlocked machine will cause it to dispense candy and become locked.
+  - Turning the knob on a locked machine or inserting a coin into an unlocked machine does nothing.
+  - A machine that’s out of candy ignores all inputs.
+ */
+
+enum Input:
+  case Coin, Turn
+
+case class Machine(locked: Boolean, candies: Int, coins: Int)
+
+object CandyDispenser:
+  import Input.*
+
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] =
+    for
+      // _ <- State.sequence(inputs.map(i => State.modify(update(i))))
+      _ <- State.traverse(inputs)(i => State.modify(update(i)))
+      s <- State.get
+    yield (s.coins, s.candies)
+
+  private def update(input: Input)(state: Machine): Machine = (input, state) match
+    case (_, m @ Machine(_, 0, _))              => m
+    case (Coin, m @ Machine(false, _, _))       => m
+    case (Turn, m @ Machine(true, _, _))        => m
+    case (Coin, Machine(true, candies, coins))  => Machine(false, candies, coins + 1)
+    case (Turn, Machine(false, candies, coins)) => Machine(true, candies - 1, coins)
