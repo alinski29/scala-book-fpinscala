@@ -82,3 +82,22 @@ object Nonblocking:
 
   def parMap[A, B](as: IndexedSeq[A])(f: A => B): Par[IndexedSeq[B]] =
     sequenceBalanced(as.map(asyncF(f)))
+
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    es =>
+      cb =>
+        cond(es) { b =>
+          if b then eval(es)(t(es)(cb))
+          else eval(es)(f(es)(cb))
+        }
+
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] = 
+    es => cb => 
+      val idx = n.run(es)
+      choices(idx).run(es)
+
+  extension [A](pa: Par[A]) def flatMap[B](f: A => Par[B]): Par[B] = 
+    es => cb =>
+      val k = pa.run(es)
+      f(k).run(es)
+    
