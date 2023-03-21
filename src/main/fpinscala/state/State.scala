@@ -30,6 +30,10 @@ object RNG:
     val (i, s) = nonNegativeInt(rng)
     (i / (Int.MaxValue.toDouble + 1.0), s)
 
+  def boolean(rng: RNG): (Boolean, RNG) =
+    rng.nextInt match
+      case (i, rng2) => (i % 2 == 0, rng2)
+
   /* Exercise 6.3
     Write functions to generate an (Int, Double) pair, a (Double, Int) pair,
     and a (Double, Double, Double) 3-tuple. You should be able to reuse the
@@ -193,8 +197,7 @@ object State:
       yield f(a, b)
 
     def flatMap[B](f: A => State[S, B]): State[S, B] =
-      s =>
-        val (a, s1) = underlying(s)
+      s => val (a, s1) = underlying(s)
         f(a)(s1)
 
   // allows State to be constructed from a function
