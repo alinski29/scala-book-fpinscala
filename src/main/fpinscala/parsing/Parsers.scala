@@ -1,8 +1,9 @@
 package fpinscala.parsing
 
+import fpinscala.testing.*
+
 import java.util.regex.*
 import scala.util.matching.Regex
-import fpinscala.testing.*
 
 /* Scala’s syntax for a type parameter that is itself a type constructor. */
 trait Parsers[Parser[+_]]:
@@ -12,12 +13,12 @@ trait Parsers[Parser[+_]]:
     def run(input: String): Either[ParseError, A]
 
     // Chooses between two parsers, first attempting p1, and then p2 if p1 fails
-    def or(p2: => Parser[A]): Parser[A]
+    infix def or(p2: => Parser[A]): Parser[A]
 
     def |(p2: => Parser[A]): Parser[A] =
       p.or(p2)
 
-    // def map[B](f: A => B): Parser[B]
+    def attempt: Parser[A]
 
     // Returns the portion of input inspected by p if successful
     def slice: Parser[String]
@@ -25,7 +26,11 @@ trait Parsers[Parser[+_]]:
     /* Sequences two parsers, running p1 and then p2, and returns the pair of their
     results if both succeed */
     def product[B](p2: => Parser[B]): Parser[(A, B)] =
-      p.flatMap(a => p2.map(b => (a, b)))
+      // p.flatMap(a => p2.map(b => (a, b)))
+      for
+        a <- p
+        b <- p2
+      yield (a, b)
 
     def **[B](p2: Parser[B]): Parser[(A, B)] =
       p.product(p2)
@@ -37,7 +42,11 @@ trait Parsers[Parser[+_]]:
       previous chapters. The choice is up to you.
      */
     def map2[B, C](p2: => Parser[B])(f: (A, B) => C): Parser[C] =
-      p.product(p2).map((a, b) => f(a, b))
+      // p.product(p2).map((a, b) => f(a, b))
+      for
+        a <- p
+        b <- p2
+      yield f(a, b)
 
     /* Exercise 9.3 (optional)
     Hard: Before continuing, see if you can define many in terms of |, map2, and succeed.
@@ -79,25 +88,74 @@ trait Parsers[Parser[+_]]:
      */
     def scope(msg: String): Parser[A]
 
-    def attempt: Parser[A]
-    
-    /* Sequences two parsers, ignoring the result of the first. We wrap 
+    /* Sequences two parsers, ignoring the result of the first. We wrap
       the ignored half in slice, since we don't care about its result.
-    */
+     */
     def *>[B](p2: => Parser[B]) =
       p.slice.map2(p2)((_, b) => b)
 
-    /** Sequences two parsers, ignoring the result of the second.
-      * We wrap the ignored half in slice, since we don't care about its result.
+    /** Sequences two parsers, ignoring the result of the second. We wrap the ignored half in slice, since we don't care
+      * about its result.
       */
     def <*(p2: => Parser[Any]) =
       p.map2(p2.slice)((a, b) => a)
+
+    def +(p2: Parser[Any]) =
+      (p ** p2).map((a, b) => a.toString + b.toString)
+
+    def token: Parser[A] =
+      p.attempt <* whitespace
+
+    /** Zero or more repetitions of `p`, separated by `p2`, whose results are ignored. */
+    def sep(
+        separator: Parser[Any]
+    ): Parser[List[A]] = // use `Parser[Any]` since don't care about result type of separator
+      p.sep1(separator) | succeed(Nil)
+
+    /** One or more repetitions of `p`, separated by `p2`, whose results are ignored. */
+    def sep1(separator: Parser[Any]): Parser[List[A]] =
+      p.map2((separator *> p).many)(_ :: _)
+
+    /** The root of the grammar, expects no further input following `p`. */
+    def root: Parser[A] =
+      p <* eof
 
   def char(c: Char): Parser[Char] =
     string(c.toString).map(_.charAt(0))
 
   // Recognizes and returns a single string
   def string(s: String): Parser[String]
+
+  /** Parser which consumes reluctantly until it encounters the given string. */
+  def thru(s: String): Parser[String] =
+    regex((".*?" + Pattern.quote(s)).r)
+
+  // discards whitespaces at the start
+  def whitespace: Parser[String] =
+    regex("\\s*".r)
+
+  def eof: Parser[String] =
+    regex("\\z".r).label("unexpected trailing characters")
+
+  def quoted: Parser[String] =
+    string("\"") *> thru("\"") map (_.dropRight(1))
+
+  /** Unescaped or escaped string literals, like "An \n important \"Quotation\"" or "bar". */
+  def escapedQuoted: Parser[String] =
+    quoted.label("string literal").token
+
+  def digits: Parser[String] =
+    regex("\\d+".r)
+
+  def digits(n: Int) =
+    regex(s"""\\d{$n}""".r)
+
+  def doubleString: Parser[String] =
+    regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token
+
+  /** Floating point literals, converted to a `Double`. */
+  def double: Parser[Double] =
+    doubleString.map(_.toDouble).label("double literal")
 
   // allways succeeds with the value A, regardless of the input string
   def succeed[A](a: A): Parser[A]
@@ -107,10 +165,6 @@ trait Parsers[Parser[+_]]:
   //  Recognizes a regular expression r
   def regex(r: Regex): Parser[String]
 
-  // def jsonParser[Err, Parser[+_]](P: Parsers[Err, Parser]): Parser[]
-
-  val numA: Parser[Int] = char('a').many.slice.map(_.size)
-
   object Laws:
     def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop =
       Prop.forAll(in)(s => p1.run(s) == p2.run(s))
@@ -118,13 +172,12 @@ trait Parsers[Parser[+_]]:
     def mapLaw[A](p: Parser[A])(in: Gen[String]): Prop =
       equal(p, p.map(a => a))(in)
 
-    // def labelLaw[A](p: Parser[A], inputs: SGen[String]): Prop =
-    //   Prop.forAll(inputs ** Gen.string) {
-    //     case (input, msg) =>
-    //       p.label(msg).run(input) match
-    //         case Left(e) => errorMessage(e) == msg
-    //         case _ => true
-    //   }
+    def labelLaw[A](p: Parser[A], inputs: SGen[String]): Prop =
+      Prop.forAll(inputs ** Gen.string) { case (input, msg) =>
+        p.label(msg).run(input) match
+          case Left(e) => e.toString == msg
+          case _       => true
+      }
   end Laws
 
 end Parsers
@@ -156,6 +209,8 @@ case class Location(input: String, offset: Int = 0):
       if (itr.hasNext) itr.next else ""
     else ""
 
+  def columnCaret = (" " * (col - 1)) + "^"
+
 end Location
 
 case class ParseError(stack: List[(Location, String)] = Nil):
@@ -172,13 +227,17 @@ case class ParseError(stack: List[(Location, String)] = Nil):
   def latestLoc: Option[Location] =
     latest.map(_(0))
 
-  // override def toString(): String =
-  //   if stack.isEmpty then "no error message"
-  //   else
-  //     val collapsed = collapseStack(stack)
-  //     val context =
-  //       collapsed.lastOption.map("\n\n" + _._1.currentLine).getOrElse("") +
-  //       collapsed.lastOption.map("\n" + _._1.columnCaret).getOrElse("")
+  override def toString =
+    if stack.isEmpty then "no error message"
+    else
+      val collapsed = collapseStack(stack)
+      val context =
+        collapsed.lastOption.map("\n\n" + _._1.currentLine).getOrElse("") +
+          collapsed.lastOption.map("\n" + _._1.columnCaret).getOrElse("")
+      collapsed.map((loc, msg) => s"${formatLoc(loc)} $msg").mkString("\n") + context
+
+  def formatLoc(l: Location): String =
+    s"${l.line}.${l.col}"
 
   /* Builds a collapsed version of the given error stack -
    * messages at the same location have their messages merged,
