@@ -12,7 +12,6 @@ class ParSpec extends TestSpec {
 
   "Par implementation" should {
 
-    // val es = Executors.newFixedThreadPool(3)
     val es = Executors.newCachedThreadPool()
 
     "compute sum in parallel" in {

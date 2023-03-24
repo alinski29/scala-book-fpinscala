@@ -267,6 +267,7 @@ object Gen:
     def **[B](gb: Gen[B]): Gen[(A, B)] =
       map2(gb)((_, _))
 
+  def apply[A](s: State[RNG, A]): Gen[A] = s
   /* Exercise 8.4
   Implement Gen.choose using this representation of Gen. It should generate
   integers in the range start to stopExclusive. Feel free to use functions you’ve already written.
