@@ -5,7 +5,8 @@ package fpinscala.monads
  * x.map(f).map(g) = f andThen g // g(f(x))
  */
 trait Functor[F[_]]:
-  extension [A](fa: F[A]) def map[B](f: A => B): F[B]
+  extension [A](fa: F[A]) 
+    def map[B](f: A => B): F[B]
 
   extension [A, B](fab: F[(A, B)])
     def distribute: (F[A], F[B]) = // aloso called unzip

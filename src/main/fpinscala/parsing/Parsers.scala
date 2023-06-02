@@ -138,7 +138,7 @@ trait Parsers[Parser[+_]]:
     regex("\\z".r).label("unexpected trailing characters")
 
   def quoted: Parser[String] =
-    string("\"") *> thru("\"") map (_.dropRight(1))
+    (string("\"") *> thru("\"")).map(_.dropRight(1))
 
   /** Unescaped or escaped string literals, like "An \n important \"Quotation\"" or "bar". */
   def escapedQuoted: Parser[String] =

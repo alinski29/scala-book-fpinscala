@@ -8,11 +8,11 @@ class ListSpec extends TestSpec {
 
   "List implementation" should {
 
-    val l = List((1 to 5): _*)
+    val l = List((1 to 5)*)
 
     "implement sum and product" in {
       List.sum(l) shouldEqual 15
-      List.product(List((1 to 5).map(_.toDouble): _*)) shouldEqual 120
+      List.product(List((1 to 5).map(_.toDouble)*)) shouldEqual 120
     }
 
     "implement tail" in {
@@ -51,7 +51,7 @@ class ListSpec extends TestSpec {
       List.sumViaFoldRight(Nil) shouldEqual 0
       List.sumViaFoldRight(l) shouldEqual List.sum(l)
 
-      val ld = List((0 to 5).map(_.toDouble): _*)
+      val ld = List((0 to 5).map(_.toDouble)*)
       List.productViaFoldRight(ld) shouldEqual List.product(ld)
       List.productViaFoldRight(Nil) shouldEqual 1
 
@@ -64,7 +64,7 @@ class ListSpec extends TestSpec {
       List.sumViaFoldLeft(l) shouldEqual List.sum(l)
 
       List.productViaFoldLeft(Nil) shouldEqual 1
-      val ld = List((0 to 5).map(_.toDouble): _*)
+      val ld = List((0 to 5).map(_.toDouble)*)
       List.productViaFoldLeft(ld) shouldEqual List.product(ld)
 
       List.lengthViaFoldLeft(Nil) shouldEqual 0

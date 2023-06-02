@@ -1,8 +1,9 @@
-package fpinscala.monad
+package fpinscala.monads
 
 import fpinscala.testing.Gen
 import fpinscala.parallelism.*
 import fpinscala.parsing.*
+import fpinscala.state.*
 
 /* LAWS
  * identity:
@@ -12,6 +13,8 @@ import fpinscala.parsing.*
  *  - combine(combine(x, y), z) == combine(x, combine(y, z))
  *  - or x.flatMap(f).flatMap(g) == x.flatMap(a => f(a).flatMap(g))
  *
+ * A monad is an implementation of one of the minimal sets of monadic
+ * combinators, satisfying the laws of associativity and identity.
  */
 trait Monad[F[_]]:
 
@@ -144,3 +147,39 @@ object Monad:
         def flatMap[B](f: A => P[B]): P[B] =
           p.flatMap(fa)(f)
     }
+
+  /* We could say that monads provide a context for introducing
+  and binding variables, and performing variable substitution. */
+
+  type IntState[A] = State[Int, A]
+
+  given intStateMonad: Monad[IntState] with {
+    override def unit[A](a: => A): IntState[A] = State(s => (a, s))
+    extension [A](st: IntState[A])
+      override def flatMap[B](f: A => IntState[B]): IntState[B] =
+        State.flatMap(st)(f)
+  }
+
+  /* An anonymous type constructor declared inline like this is called a type
+  lambda in Scala. We can use this feature to partially apply the State type
+  constructor and declare a monad instance for any state type S: */
+  given stateMonad[S]: Monad[[x] =>> State[S, x]] with {
+    override def unit[A](a: => A): State[S, A] =
+      State(s => (a, s))
+    extension [A](st: State[S, A])
+      def flatMap[B](f: A => State[S, B]): State[S, B] =
+        State.flatMap(st)(f)
+  }
+
+  val F = stateMonad[Int]
+
+  def zipWithIndex[A](as: List[A]): List[(Int, A)] =
+    as.foldLeft(F.unit(List[(Int, A)]()))((acc, a) =>
+      for
+        xs <- acc
+        n  <- State.get
+        _  <- State.set(n + 1)
+      yield (n, a) :: xs
+    ).run(0)
+      ._1
+      .reverse

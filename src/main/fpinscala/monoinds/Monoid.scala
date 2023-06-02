@@ -1,6 +1,7 @@
-package fpinscala.monoid
+package fpinscala.monoids
 
 import fpinscala.testing.{Prop, Gen}
+import fpinscala.parallelism.Nonblocking.*
 
 /* A monoid consists of the following:
  - Some type A
@@ -139,7 +140,7 @@ object Monoid:
   Monoid[A] to a Monoid[Par[A]],[118] and then use this to implement
   parFoldMap.
    */
-  import fpinscala.parallelism.Nonblocking.*
+  import fpinscala.parallelism.Nonblocking.Par.*
 
   def par[A](m: Monoid[A]): Monoid[Par[A]] =
     new {
@@ -181,7 +182,7 @@ object Monoid:
   // wc("lorem ipsum do") = Part("lorem", 1, "do") only 1 word we know for sure ("lorem")
   // wc("lor sit amet, ") = Part("lor", 2, "")
 
-  import WC._
+  import WC.*
   val wcMonoid: Monoid[WC] = new {
     val empty = Stub("")
 

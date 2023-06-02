@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import scala.util.{Try, Failure, Success}
 
-import Prop._
+import Prop.*
 
 opaque type Prop = (MaxSize, TestCases, RNG) => Result
 object Prop:

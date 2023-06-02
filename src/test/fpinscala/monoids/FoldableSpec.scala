@@ -1,8 +1,8 @@
 package fpinscala.monoids
 
 import fpinscala.TestSpec
-import fpinscala.monoid.Monoid
-import fpinscala.monoid.Monoid.*
+import fpinscala.monoids.Monoid
+import fpinscala.monoids.Monoid.*
 import fpinscala.testing.*
 import fpinscala.parallelism.Nonblocking.*
 

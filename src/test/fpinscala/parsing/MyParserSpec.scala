@@ -8,7 +8,7 @@ class MyParserSpec extends TestSpec {
 
   "MyParser" should {
 
-    import MyParserSpec._
+    import MyParserSpec.*
     import fpinscala.parsing.MyParser.{run, slice}
 
     val parser = new Examples(MyParser)
@@ -75,7 +75,7 @@ object MyParserSpec:
 
     val aorb = (char('a') | char('b')).many.slice
 
-    val quoted = string("\"") *> thru("\"") map (_.dropRight(1))
+    val quoted = (string("\"") *> thru("\"")).map(_.dropRight(1))
 
     def tkn(s: String) = string(s).token
 

@@ -1,9 +1,9 @@
 package fpinscala.monoids
 
 import fpinscala.TestSpec
-import fpinscala.monoid.Monoid
-import fpinscala.monoid.Monoid.*
-import fpinscala.monoid.Monoid.given
+import fpinscala.monoids.Monoid
+import fpinscala.monoids.Monoid.*
+import fpinscala.monoids.Monoid.given
 import fpinscala.parallelism.Nonblocking.*
 import fpinscala.testing.*
 
@@ -44,7 +44,7 @@ class MonoidSpec extends TestSpec:
 
     "promote a Monoid[A] to a Par[Monoid[A]]" in {
       Prop.forAll(genString ** genString ** genString) { case ((s1, s2), s3) =>
-        val (a, b, c) = (unit(s1), unit(s2), unit(s3))
+        val (a, b, c) = (Par.unit(s1), Par.unit(s2), Par.unit(s3))
         val m         = par(stringMonoid)
 
         m.combine(a, m.combine(b, c)).run(es) == m.combine(m.combine(a, b), c).run(es)

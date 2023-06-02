@@ -7,7 +7,7 @@ import fpinscala.laziness.LazyList.*
 class LazyListSpec extends TestSpec {
 
   "LazyList implementation" should {
-    val ll = LazyList((0 to 5): _*)
+    val ll = LazyList((0 to 5)*)
 
     "take elements" in {
       Empty.take(1).toList shouldEqual Nil
@@ -48,7 +48,7 @@ class LazyListSpec extends TestSpec {
 
     "append" in {
       LazyList().append(LazyList(0, 1, 2)).toList shouldEqual List(0, 1, 2)
-      ll.append(LazyList(6, 7, 8)).toList shouldEqual List((0 to 8): _*)
+      ll.append(LazyList(6, 7, 8)).toList shouldEqual List((0 to 8)*)
     }
 
     "ones" in {

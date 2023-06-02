@@ -21,8 +21,7 @@ class ParSpec extends TestSpec {
         else
           val (l, r) = ints.splitAt(ints.size / 2)
           fork(parSum(l)).map2(fork(parSum(r)))(_ + _)
-      parSum(IndexedSeq((1 to 5): _*)).run(es).get shouldEqual 15
-
+      parSum(IndexedSeq((1 to 5)*)).run(es).get shouldEqual 15
     }
 
     "test map laws" in {

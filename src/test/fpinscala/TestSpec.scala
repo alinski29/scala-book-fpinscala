@@ -5,9 +5,9 @@ import fpinscala.datastructures.Tree
 import fpinscala.state.RNG
 import fpinscala.state.State
 import fpinscala.testing.*
-import org.scalatest._
-import org.scalatest.flatspec._
-import org.scalatest.matchers._
+import org.scalatest.*
+import org.scalatest.flatspec.*
+import org.scalatest.matchers.*
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.concurrent.ExecutorService
@@ -50,7 +50,7 @@ trait TestSpec extends AnyWordSpecLike with should.Matchers:
     yield list
 
   def genLazyList[A](g: Gen[A]): Gen[LazyList[A]] =
-    genList(g).map(xs => LazyList(xs: _*))
+    genList(g).map(xs => LazyList(xs*))
 
   private def genTree[A](g: Gen[A]): Gen[Tree[A]] =
     def loop(): Gen[Tree[A]] =

@@ -1,18 +1,18 @@
 package fpinscala.monoids
 
-import fpinscala.monoid.Monoid
+import fpinscala.monoids.Monoid
 
 // the underscore indicates that F is not a proper type but a type
 // constructor that takes one type argument - higher-order type constructor / higher-kinded type
 trait Foldable[F[_]]:
-  import fpinscala.monoid.Monoid.{endoMonoid, dual}
+  import fpinscala.monoids.Monoid.{endoMonoid, dual}
 
   extension [A](as: F[A])
-    def foldRight[B](acc: B)(f: (A, B) => B): B
-    // as.foldMap(f.curried)(using endoMonoid[B])(acc)
+    def foldRight[B](acc: B)(f: (A, B) => B): B =
+      as.foldMap(f.curried)(using endoMonoid[B])(acc)
 
-    def foldLeft[B](acc: B)(f: (B, A) => B): B
-    // as.foldMap(a => b => f(b, a))(using dual(endoMonoid[B]))(acc)
+    def foldLeft[B](acc: B)(f: (B, A) => B): B =
+      as.foldMap(a => b => f(b, a))(using endoMonoid[B])(acc)
 
     def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
       as.foldRight(mb.empty)((a, b) => mb.combine(f(a), b))
@@ -24,10 +24,9 @@ trait Foldable[F[_]]:
     Any Foldable structure can be turned into a List. Add a toList extension
     method to the Foldable trait and provide a concrete implementation in terms
     of the other methods on Foldable:
-    */
+     */
     def toList: List[A] =
       as.foldRight(List.empty)(_ :: _)
-    
 
 /* Exercise 10.12
   Implement Foldable[List], Foldable[IndexedSeq], and Foldable[LazyList].
@@ -98,19 +97,19 @@ object Foldable:
 
   given Foldable[Option] with {
     extension [A](opt: Option[A])
-      override def foldRight[B](acc: B)(f: (A, B) => B): B = 
+      override def foldRight[B](acc: B)(f: (A, B) => B): B =
         opt match
-          case None => acc
+          case None    => acc
           case Some(a) => f(a, acc)
 
-      override def foldLeft[B](acc: B)(f: (B, A) => B): B = 
-        opt match 
-          case None => acc
+      override def foldLeft[B](acc: B)(f: (B, A) => B): B =
+        opt match
+          case None    => acc
           case Some(a) => f(acc, a)
 
-      override def foldMap[B](f: A => B)(using mb: Monoid[B]): B = 
-        opt match 
-          case None => mb.empty
+      override def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
+        opt match
+          case None    => mb.empty
           case Some(a) => f(a)
   }
 

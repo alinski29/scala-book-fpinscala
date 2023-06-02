@@ -5,11 +5,11 @@ import fpinscala.state.Input
 import fpinscala.state.Machine
 import fpinscala.state.RNG
 import fpinscala.state.RNG.*
-import org.scalatest.matchers._
+import org.scalatest.matchers.*
 import org.scalatest.propspec.AnyPropSpecLike
 
 class StateSpec extends AnyPropSpecLike with should.Matchers:
-  import StateSpec._
+  import StateSpec.*
 
   private val rng = RNG.SimpleRNG(42)
 
@@ -71,7 +71,7 @@ class StateSpec extends AnyPropSpecLike with should.Matchers:
 
   property("candy dispenser") {
     import Input.{Coin, Turn}
-    import CandyDispenser._
+    import CandyDispenser.*
 
     simulateMachine(List(Coin, Turn, Coin, Turn))
       .run(Machine(true, 2, 0))
